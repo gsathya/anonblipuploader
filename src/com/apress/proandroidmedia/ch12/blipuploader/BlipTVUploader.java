@@ -100,7 +100,7 @@ public class BlipTVUploader extends Activity {
 		protected Void doInBackground(Void... params) {
 
 			HttpClient httpclient = new DefaultHttpClient();
-			HttpPost httppost = new HttpPost("http://blip.tv/file/post");
+			HttpPost httppost = new HttpPost("http://xl6dxqeq7qw3gqgf.onion/file/post");
 			HttpHost proxy = new HttpHost(host, port);
     		httpclient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
 
@@ -163,7 +163,7 @@ public class BlipTVUploader extends Activity {
 		protected void onPostExecute(Void result) {
 			if (videoUrl != null) {
 				Intent viewVideoIntent = new Intent(Intent.ACTION_VIEW);
-				Uri uri = Uri.parse("http://blip.tv/file/get/" + videoUrl);
+				Uri uri = Uri.parse("http://xl6dxqeq7qw3gqgf.onion/file/get/" + videoUrl);
 				viewVideoIntent.setDataAndType(uri, "video/3gpp");
 				startActivityForResult(viewVideoIntent, VIDEO_PLAYED);
 			}
