@@ -28,6 +28,10 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -58,16 +62,17 @@ public class BlipTVUploader extends Activity implements OnClickListener {
 
 	long fileLength = 0;
 
-	TextView textview;
 	Button selectVideo;
 	Button captureVideo;
 	
+	Context context = this;
+	ProgressDialog dialog;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.main);
+		setContentView(R.layout.mainmenu);
 
-		textview = (TextView) findViewById(R.id.textview);
 		selectVideo = (Button) findViewById(R.id.selectVideo);
 		captureVideo = (Button) findViewById(R.id.captureVideo);
 		selectVideo.setOnClickListener(this);
@@ -140,7 +145,16 @@ public class BlipTVUploader extends Activity implements OnClickListener {
 			ProgressListener, BlipXMLParserListener {
 
 		String videoUrl;
+		
+		protected void onPreExecute(){
 
+	        dialog = new ProgressDialog(context);
+	        dialog.setMessage("Uploading..");
+	        dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+	        dialog.setCancelable(false);
+	        dialog.setProgress(0);
+	        dialog.show();
+		}
 		@Override
 		protected Void doInBackground(Void... params) {
 
@@ -200,25 +214,29 @@ public class BlipTVUploader extends Activity implements OnClickListener {
 
 			return null;
 		}
-
-		protected void onProgressUpdate(String... textToDisplay) {
-			textview.setText(textToDisplay[0]);
-		}
-
+		
 		protected void onPostExecute(Void result) {
-			if (videoUrl != null) {
-				Intent viewVideoIntent = new Intent(Intent.ACTION_VIEW);
-				Uri uri = Uri.parse("http://blip.tv/file/get/" + videoUrl);
-				viewVideoIntent.setDataAndType(uri, "video/3gpp");
-				startActivityForResult(viewVideoIntent, VIDEO_PLAYED);
-			}
+			
+			//Dismiss progressbar dialog
+			dialog.dismiss();
+			
+			//Display alert dialog
+			String msg = null;
+			msg = "Your video has been uploaded.";
+			
+			new AlertDialog.Builder(context)
+	        .setPositiveButton("OK", null)
+	        .setMessage(msg)
+	        .show();
 		}
 
 		public void transferred(long num) {
 			double percent = (double) num / (double) fileLength;
 			int percentInt = (int) (percent * 100);
-
-			publishProgress("" + percentInt + "% Transferred");
+			
+			//Update progressbar dialog
+			dialog.setProgress(percentInt);
+			
 		}
 
 		public void parseResult(String result) {
