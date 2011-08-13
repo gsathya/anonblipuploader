@@ -34,14 +34,20 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
-public class BlipTVUploader extends Activity {
+public class BlipTVUploader extends Activity implements OnClickListener {
 
 	final static int VIDEO_CAPTURED = 0;
 	final static int VIDEO_PLAYED = 1;
+	private static final int GALLERY_RESULT = 2;
 
 	File videoFile;
+	String TAG = "BlipTVUploader";
 	String title = "A Video";
 	String username = "bliptest123";
 	String password = "bliptest123";
@@ -53,40 +59,79 @@ public class BlipTVUploader extends Activity {
 	long fileLength = 0;
 
 	TextView textview;
-
+	Button selectVideo;
+	Button captureVideo;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
 		textview = (TextView) findViewById(R.id.textview);
+		selectVideo = (Button) findViewById(R.id.selectVideo);
+		captureVideo = (Button) findViewById(R.id.captureVideo);
+		selectVideo.setOnClickListener(this);
+		captureVideo.setOnClickListener(this);
+		
 
-		Intent captureVideoIntent = new Intent(
-				android.provider.MediaStore.ACTION_VIDEO_CAPTURE);
-		startActivityForResult(captureVideoIntent, VIDEO_CAPTURED);
+		
 	}
-
+	
+	public void onClick(View v){
+		
+		if(v == captureVideo){
+			Intent captureVideoIntent = new Intent(
+					android.provider.MediaStore.ACTION_VIDEO_CAPTURE);
+			startActivityForResult(captureVideoIntent, VIDEO_CAPTURED);
+		}
+		else if(v == selectVideo){
+			Intent i = new Intent(Intent.ACTION_GET_CONTENT, android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+			startActivityForResult(i, GALLERY_RESULT);
+		}
+	}
+	
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-		if (resultCode == RESULT_OK && requestCode == VIDEO_CAPTURED) {
-			Uri videoFileUri = data.getData();
+		if (resultCode == RESULT_OK)
+		{	
+			String videoFilePath = null;
+			Uri videoFileUri = null;
+			if(requestCode == VIDEO_CAPTURED) {
+				videoFileUri = data.getData();
+			
+				String[] columns = { android.provider.MediaStore.Video.Media.DATA };
+				Cursor cursor = managedQuery(videoFileUri, columns, null, null,
+						null);
+				int fileColumn = cursor
+						.getColumnIndexOrThrow(android.provider.MediaStore.Video.Media.DATA);
+				if (cursor.moveToFirst()) {
+				videoFilePath = cursor.getString(fileColumn);
+				Log.d(TAG,"CAPTURED VIDEO FILE PATH"+videoFilePath);
 
-			String[] columns = { android.provider.MediaStore.Video.Media.DATA };
-			Cursor cursor = managedQuery(videoFileUri, columns, null, null,
-					null);
-			int fileColumn = cursor
-					.getColumnIndexOrThrow(android.provider.MediaStore.Video.Media.DATA);
-			if (cursor.moveToFirst()) {
-				String videoFilePath = cursor.getString(fileColumn);
-				Log.v("VIDEO FILE PATH", videoFilePath);
-
-				videoFile = new File(videoFilePath);
-				fileLength = videoFile.length();
-				BlipTVFilePoster btvfp = new BlipTVFilePoster();
-				btvfp.execute();
+				
+				}
+		
+			} 
+			else if(requestCode == GALLERY_RESULT){
+				videoFileUri = data.getData();
+				
+				String[] columns = { android.provider.MediaStore.Video.Media.DATA };
+				Cursor cursor = managedQuery(videoFileUri, columns, null, null,
+						null);
+				int fileColumn = cursor
+						.getColumnIndexOrThrow(android.provider.MediaStore.Video.Media.DATA);
+				if (cursor.moveToFirst()) {
+				videoFilePath = cursor.getString(fileColumn);
+				Log.v(TAG,"SELECTED VIDEO FILE PATH"+videoFilePath);
+				}
 			}
-
-		} else if (requestCode == VIDEO_PLAYED) {
+			
+			videoFile = new File(videoFilePath);
+			fileLength = videoFile.length();
+			BlipTVFilePoster btvfp = new BlipTVFilePoster();
+			btvfp.execute();
+		}
+		else if (requestCode == VIDEO_PLAYED) {
 			finish();
 		}
 	}
@@ -100,7 +145,7 @@ public class BlipTVUploader extends Activity {
 		protected Void doInBackground(Void... params) {
 
 			HttpClient httpclient = new DefaultHttpClient();
-			HttpPost httppost = new HttpPost("http://xl6dxqeq7qw3gqgf.onion/file/post");
+			HttpPost httppost = new HttpPost("http://blip.tv/file/post");
 			HttpHost proxy = new HttpHost(host, port);
     		httpclient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
 
@@ -163,7 +208,7 @@ public class BlipTVUploader extends Activity {
 		protected void onPostExecute(Void result) {
 			if (videoUrl != null) {
 				Intent viewVideoIntent = new Intent(Intent.ACTION_VIEW);
-				Uri uri = Uri.parse("http://xl6dxqeq7qw3gqgf.onion/file/get/" + videoUrl);
+				Uri uri = Uri.parse("http://blip.tv/file/get/" + videoUrl);
 				viewVideoIntent.setDataAndType(uri, "video/3gpp");
 				startActivityForResult(viewVideoIntent, VIDEO_PLAYED);
 			}
